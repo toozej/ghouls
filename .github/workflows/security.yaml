@@ -61,7 +61,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
         with:
-          image-ref: 'ghcr.io/toozej/golang-starter:latest'
+          image-ref: 'ghcr.io/toozej/ghouls:latest'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true

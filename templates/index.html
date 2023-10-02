@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ghouls</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+</head>
+<body>
+    <h1>Ghouls</h1>
+    
+    <!-- Form to add a new URL -->
+    <form action="/add" method="post">
+        <label for="url">Add URL:</label>
+        <input type="text" id="url" name="url" required>
+        <button type="submit">Add</button>
+    </form>
+
+    <!-- Form to delete selected URLs -->
+    <form action="/delete" method="post">
+        <h2>My URLs</h2>
+        <ul>
+            {{range .URLs}}
+                <li>
+                    <input type="checkbox" name="urlsToDelete" value="{{.}}">
+                    <a href="{{.}}" target="_blank">{{.}}</a> <!-- nosemgrep -->
+                </li>
+            {{end}}
+        </ul>
+        <button type="submit">Delete Selected</button>
+    </form>
+</body>
+</html>
+

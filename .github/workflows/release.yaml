@@ -30,8 +30,8 @@ jobs:
           check-latest: true
       - name: Grab Cosign private key
         run: |
-          echo "${COSIGN_PRIVATE_KEY}" > ./golang-starter.key
-          chmod 0600 ./golang-starter.key
+          echo "${COSIGN_PRIVATE_KEY}" > ./ghouls.key
+          chmod 0600 ./ghouls.key
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
       - name: Login to DockerHub
@@ -63,7 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Clean up Cosign private key
-        run: shred -u ./golang-starter.key
+        run: shred -u ./ghouls.key
 
   verify_signed_docker_images:
     runs-on: ubuntu-latest
@@ -76,13 +76,13 @@ jobs:
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
-      - name: Get public cosign key for golang-starter project from GitHub
+      - name: Get public cosign key for ghouls project from GitHub
         run: |
-          curl --silent https://raw.githubusercontent.com/toozej/golang-starter/main/golang-starter.pub -O
+          curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
       - name: Verify signatures of Docker images
         run: |
-          cosign verify --key golang-starter.pub \
-            ${{ matrix.registry }}toozej/golang-starter:${{ matrix.tag }}
+          cosign verify --key ghouls.pub \
+            ${{ matrix.registry }}toozej/ghouls:${{ matrix.tag }}
 
   verify_signed_binaries:
     runs-on: ubuntu-latest
@@ -98,13 +98,13 @@ jobs:
         uses: sigstore/cosign-installer@main # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
       - name: Get public cosign key
         run: |
-          curl --silent https://raw.githubusercontent.com/toozej/golang-starter/main/golang-starter.pub -O
+          curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
       - name: Verify signatures of binaries
         run: |
-          FILE=./dist/golang-starter_${{ matrix.platform }}_${{ matrix.arch }}/golang-starter${{ matrix.extension }}
+          FILE=./dist/ghouls_${{ matrix.platform }}_${{ matrix.arch }}/ghouls${{ matrix.extension }}
           if test -f "${FILE}"; then
             echo "verifying binary: ${FILE}"
-            cosign verify --key golang-starter.pub --signature "${FILE}.sig" "${FILE}"
+            cosign verify --key ghouls.pub --signature "${FILE}.sig" "${FILE}"
           else
             echo "skipping verifying non-existant binary: ${FILE}"
           fi
@@ -123,13 +123,13 @@ jobs:
         uses: sigstore/cosign-installer@main # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
       - name: Get public cosign key
         run: |
-          curl --silent https://raw.githubusercontent.com/toozej/golang-starter/main/golang-starter.pub -O
+          curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
       - name: Verify signatures of archives
         run: |
-          FILE=./dist/golang-starter_${{ matrix.platform }}_${{ matrix.arch }}.${{ matrix.extension }}
+          FILE=./dist/ghouls_${{ matrix.platform }}_${{ matrix.arch }}.${{ matrix.extension }}
           if test -f "${FILE}"; then
             echo "verifying archive: ${FILE}"
-            cosign verify --key golang-starter.pub --signature "${FILE}.sig" "${FILE}"
+            cosign verify --key ghouls.pub --signature "${FILE}.sig" "${FILE}"
           else
             echo "skipping verifying non-existant archive: ${FILE}"
           fi

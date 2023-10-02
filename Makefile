@@ -41,24 +41,24 @@ local-release-verify: local-release local-sign local-verify ## Release and verif
 pre-reqs: pre-commit-install ## Install pre-commit hooks and necessary binaries
 
 vet: ## Run `go vet` in Docker
-	docker build --target vet -f $(CURDIR)/Dockerfile -t toozej/golang-starter:latest . 
+	docker build --target vet -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . 
 
 test: ## Run `go test` in Docker
-	docker build --target test -f $(CURDIR)/Dockerfile -t toozej/golang-starter:latest . 
+	docker build --target test -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . 
 	@echo -e "\nStatements missing coverage"
 	@grep -v -e " 1$$" c.out
 
 build: ## Build Docker image, including running tests
-	docker build -f $(CURDIR)/Dockerfile -t toozej/golang-starter:latest .
+	docker build -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest .
 
-get-cosign-pub-key: ## Get golang-starter Cosign public key from GitHub
-	test -f $(CURDIR)/golang-starter.pub || curl --silent https://raw.githubusercontent.com/toozej/golang-starter/main/golang-starter.pub -O
+get-cosign-pub-key: ## Get ghouls Cosign public key from GitHub
+	test -f $(CURDIR)/ghouls.pub || curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
 
 verify: get-cosign-pub-key ## Verify Docker image with Cosign
-	cosign verify --key $(CURDIR)/golang-starter.pub toozej/golang-starter:latest
+	cosign verify --key $(CURDIR)/ghouls.pub toozej/ghouls:latest
 
 run: ## Run built Docker image
-	docker run --rm --name golang-starter -v $(CURDIR)/config:/config toozej/golang-starter:latest
+	docker run --rm --name ghouls -p 8080:8080 -v ghouls:/data toozej/ghouls:latest
 
 up: test build ## Run Docker Compose project with build Docker image
 	docker compose -f docker-compose.yml down --remove-orphans
@@ -69,10 +69,10 @@ down: ## Stop running Docker Compose project
 	docker compose -f docker-compose.yml down --remove-orphans
 
 distroless-build: ## Build Docker image using distroless as final base
-	docker build -f $(CURDIR)/Dockerfile.distroless -t toozej/golang-starter:distroless . 
+	docker build -f $(CURDIR)/Dockerfile.distroless -t toozej/ghouls:distroless . 
 
 distroless-run: ## Run built Docker image using distroless as final base
-	docker run --rm --name golang-starter -v $(CURDIR)/config:/config toozej/golang-starter:distroless
+	docker run --rm --name ghouls -v $(CURDIR)/config:/config toozej/ghouls:distroless
 
 local-update-deps: ## Run `go get -t -u ./...` to update Go module dependencies
 	go get -t -u ./...
@@ -92,36 +92,36 @@ local-cover: ## View coverage report in web browser
 	go tool cover -html=c.out
 
 local-build: ## Run `go build` using locally installed golang toolchain
-	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/golang-starter/
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/ghouls/
 
 local-run: ## Run locally built binary
-	$(CURDIR)/golang-starter
+	$(CURDIR)/ghouls
 
 local-release-test: ## Build assets and test goreleaser config using locally installed golang toolchain and goreleaser
 	goreleaser check
 	goreleaser build --rm-dist --snapshot
 
 local-release: local-test docker-login ## Release assets using locally installed golang toolchain and goreleaser
-	if test -e $(CURDIR)/golang-starter.key && test -e $(CURDIR)/.env; then \
+	if test -e $(CURDIR)/ghouls.key && test -e $(CURDIR)/.env; then \
 		export `cat $(CURDIR)/.env | xargs` && goreleaser release --rm-dist; \
 	else \
-		echo "no cosign private key found at $(CURDIR)/golang-starter.key. Cannot release."; \
+		echo "no cosign private key found at $(CURDIR)/ghouls.key. Cannot release."; \
 	fi
 
 local-sign: local-test ## Sign locally installed golang toolchain and cosign
-	if test -e $(CURDIR)/golang-starter.key && test -e $(CURDIR)/.env; then \
-		export `cat $(CURDIR)/.env | xargs` && cosign sign-blob --key=$(CURDIR)/golang-starter.key --output-signature=$(CURDIR)/golang-starter.sig $(CURDIR)/golang-starter; \
+	if test -e $(CURDIR)/ghouls.key && test -e $(CURDIR)/.env; then \
+		export `cat $(CURDIR)/.env | xargs` && cosign sign-blob --key=$(CURDIR)/ghouls.key --output-signature=$(CURDIR)/ghouls.sig $(CURDIR)/ghouls; \
 	else \
-		echo "no cosign private key found at $(CURDIR)/golang-starter.key. Cannot release."; \
+		echo "no cosign private key found at $(CURDIR)/ghouls.key. Cannot release."; \
 	fi
 
 local-verify: get-cosign-pub-key ## Verify locally compiled binary
 	# cosign here assumes you're using Linux AMD64 binary
-	cosign verify-blob --key $(CURDIR)/golang-starter.pub --signature $(CURDIR)/golang-starter.sig $(CURDIR)/golang-starter
+	cosign verify-blob --key $(CURDIR)/ghouls.pub --signature $(CURDIR)/ghouls.sig $(CURDIR)/ghouls
 
 install: local-build local-verify ## Install compiled binary to local machine
-	sudo cp $(CURDIR)/golang-starter /usr/local/bin/golang-starter
-	sudo chmod 0755 /usr/local/bin/golang-starter
+	sudo cp $(CURDIR)/ghouls /usr/local/bin/ghouls
+	sudo chmod 0755 /usr/local/bin/ghouls
 
 docker-login: ## Login to Docker registries used to publish images to
 	if test -e $(CURDIR)/.env; then \
@@ -169,7 +169,7 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 pre-commit-run: ## Run pre-commit hooks against all files
 	pre-commit run --all-files
 	# manually run the following checks since their pre-commits aren't working or don't exist
-	go-licenses report github.com/toozej/golang-starter/cmd/golang-starter
+	go-licenses report github.com/toozej/ghouls/cmd/ghouls
 	govulncheck ./...
 
 update-golang-version: ## Update to latest Golang version across the repo
@@ -180,17 +180,17 @@ update-golang-version: ## Update to latest Golang version across the repo
 docs: docs-generate docs-serve ## Generate and serve documentation
 
 docs-generate:
-	docker build -f $(CURDIR)/Dockerfile.docs -t toozej/golang-starter:docs . 
-	docker run --rm --name golang-starter-docs -v $(CURDIR):/package -v $(CURDIR)/docs:/docs toozej/golang-starter:docs
+	docker build -f $(CURDIR)/Dockerfile.docs -t toozej/ghouls:docs . 
+	docker run --rm --name ghouls-docs -v $(CURDIR):/package -v $(CURDIR)/docs:/docs toozej/ghouls:docs
 
 docs-serve: ## Serve documentation on http://localhost:9000
-	docker run -d --rm --name golang-starter-docs-serve -p 9000:3080 -v $(CURDIR)/docs:/data thomsch98/markserv
+	docker run -d --rm --name ghouls-docs-serve -p 9000:3080 -v $(CURDIR)/docs:/data thomsch98/markserv
 	$(OPENER) http://localhost:9000/docs.md
 	@echo -e "to stop docs container, run:\n"
-	@echo "docker kill golang-starter-docs-serve"
+	@echo "docker kill ghouls-docs-serve"
 
 clean: ## Remove any locally compiled binaries
-	rm -f $(CURDIR)/golang-starter
+	rm -f $(CURDIR)/ghouls
 
 help: ## Display help text
 	@grep -E '^[a-zA-Z_-]+ ?:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

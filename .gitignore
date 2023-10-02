@@ -1,5 +1,5 @@
 # Cosign
-golang-starter.key
+ghouls.key
 cosign.key
 *.sig
 
@@ -12,7 +12,8 @@ cosign.key
 *.dll
 *.so
 *.dylib
-golang-starter
+ghouls
+data.json
 
 # Test binary, built with `go test -c`
 *.test
