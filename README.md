@@ -7,6 +7,9 @@ Simple Go-based URL Bookmarking Service
 - /list
 
 ## Add new URL to ghouls via cURL
+```bash
+curl -X POST -d "url=https://exampleurltoadd.com" http://ghouls-hostname-here/add
+```
 
 With HTTP Basic Auth:
 ```bash
