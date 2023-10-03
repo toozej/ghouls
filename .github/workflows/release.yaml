@@ -3,7 +3,7 @@ name: release
 
 on:
   workflow_run:
-    workflows: [security]
+    workflows: [ci]
     types: [completed]
     branches: [main]
     tags: ["*"]
@@ -15,7 +15,6 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,7 +58,8 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --clean
+          workdir: '/home/runner/work/ghouls/ghouls'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Clean up Cosign private key
@@ -67,12 +67,11 @@ jobs:
 
   verify_signed_docker_images:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     permissions: {}
     strategy:
       matrix:
         registry: ['', 'ghcr.io/', 'quay.io/']
-        tag: ['latest', '-arm64', '-amd64']
+        tag: ['latest', 'latest-arm64', 'latest-amd64']
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
@@ -86,7 +85,6 @@ jobs:
 
   verify_signed_binaries:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     permissions: {}
     strategy:
       matrix:
@@ -111,7 +109,6 @@ jobs:
 
   verify_signed_archives:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     permissions: {}
     strategy:
       matrix:

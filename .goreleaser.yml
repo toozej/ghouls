@@ -1,4 +1,6 @@
 ---
+project_name: ghouls
+
 env:
   - GO111MODULE=on
 
@@ -36,6 +38,7 @@ builds:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate
         }} -X main.builtBy=goreleaser
     main: ./cmd/ghouls/
+    binary: ghouls
 
 universal_binaries:
   - replace: false
@@ -169,6 +172,18 @@ docker_manifests:
     image_templates:
       - 'quay.io/toozej/ghouls:{{ .Tag }}-amd64'
       - 'quay.io/toozej/ghouls:{{ .Tag }}-arm64'
+  - name_template: 'toozej/ghouls:{{ .Tag }}-distroless'
+    image_templates:
+      - 'toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'toozej/ghouls:{{ .Tag }}-distroless-arm64'
+  - name_template: 'ghcr.io/toozej/ghouls:{{ .Tag }}-distroless'
+    image_templates:
+      - 'ghcr.io/toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'ghcr.io/toozej/ghouls:{{ .Tag }}-distroless-arm64'
+  - name_template: 'quay.io/toozej/ghouls:{{ .Tag }}-distroless'
+    image_templates:
+      - 'quay.io/toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'quay.io/toozej/ghouls:{{ .Tag }}-distroless-arm64'
   # latest
   - name_template: 'toozej/ghouls:latest'
     image_templates:
@@ -182,6 +197,19 @@ docker_manifests:
     image_templates:
       - 'quay.io/toozej/ghouls:{{ .Tag }}-amd64'
       - 'quay.io/toozej/ghouls:{{ .Tag }}-arm64'
+  # distroless
+  - name_template: 'toozej/ghouls:distroless'
+    image_templates:
+      - 'toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'toozej/ghouls:{{ .Tag }}-distroless-arm64'
+  - name_template: 'ghcr.io/toozej/ghouls:distroless'
+    image_templates:
+      - 'ghcr.io/toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'ghcr.io/toozej/ghouls:{{ .Tag }}-distroless-arm64'
+  - name_template: 'quay.io/toozej/ghouls:distroless'
+    image_templates:
+      - 'quay.io/toozej/ghouls:{{ .Tag }}-distroless-amd64'
+      - 'quay.io/toozej/ghouls:{{ .Tag }}-distroless-arm64'
 
 archives:
   - name_template: >-

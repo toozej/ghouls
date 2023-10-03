@@ -92,18 +92,18 @@ local-cover: ## View coverage report in web browser
 	go tool cover -html=c.out
 
 local-build: ## Run `go build` using locally installed golang toolchain
-	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/ghouls/
+	CGO_ENABLED=0 go build -o $(CURDIR)/out/ghouls -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/ghouls/
 
 local-run: ## Run locally built binary
-	$(CURDIR)/ghouls
+	$(CURDIR)/out/ghouls
 
 local-release-test: ## Build assets and test goreleaser config using locally installed golang toolchain and goreleaser
 	goreleaser check
-	goreleaser build --rm-dist --snapshot
+	goreleaser build --clean --snapshot
 
 local-release: local-test docker-login ## Release assets using locally installed golang toolchain and goreleaser
 	if test -e $(CURDIR)/ghouls.key && test -e $(CURDIR)/.env; then \
-		export `cat $(CURDIR)/.env | xargs` && goreleaser release --rm-dist; \
+		export `cat $(CURDIR)/.env | xargs` && goreleaser release --clean; \
 	else \
 		echo "no cosign private key found at $(CURDIR)/ghouls.key. Cannot release."; \
 	fi
@@ -120,7 +120,7 @@ local-verify: get-cosign-pub-key ## Verify locally compiled binary
 	cosign verify-blob --key $(CURDIR)/ghouls.pub --signature $(CURDIR)/ghouls.sig $(CURDIR)/ghouls
 
 install: local-build local-verify ## Install compiled binary to local machine
-	sudo cp $(CURDIR)/ghouls /usr/local/bin/ghouls
+	sudo cp $(CURDIR)/out/ghouls /usr/local/bin/ghouls
 	sudo chmod 0755 /usr/local/bin/ghouls
 
 docker-login: ## Login to Docker registries used to publish images to
