@@ -33,6 +33,8 @@ jobs:
           chmod 0600 ./ghouls.key
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+      - uses: sigstore/cosign-installer@v3 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
+      - uses: anchore/sbom-action/download-syft@v0 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
       - name: Login to DockerHub
         uses: docker/login-action@v3 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
         # https://docs.docker.com/docker-hub/access-tokens/
