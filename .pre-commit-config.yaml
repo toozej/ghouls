@@ -36,10 +36,10 @@ repos:
           #  name: Attempts to load all json files to verify syntax.
           #  description: https://github.com/pre-commit/pre-commit-hooks/blob/master/pre_commit_hooks/check_json.py
           #  files: \.(json)$
-          #- id: check-toml
-          #  name: Attempts to load all toml files to verify syntax.
-          #  description: https://github.com/pre-commit/pre-commit-hooks/blob/master/pre_commit_hooks/check_toml.py
-          #  files: \.(toml)$
+      - id: check-toml
+        name: Attempts to load all toml files to verify syntax.
+        description: https://github.com/pre-commit/pre-commit-hooks/blob/master/pre_commit_hooks/check_toml.py
+        files: \.(toml)$
       - id: check-yaml
         name: Attempts to load all yaml files to verify syntax.
         description: https://github.com/pre-commit/pre-commit-hooks/blob/master/pre_commit_hooks/check_yaml.py
