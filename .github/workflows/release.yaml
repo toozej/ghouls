@@ -27,12 +27,8 @@ jobs:
         with:
           go-version: '^1.21'
           check-latest: true
-      - name: Grab Cosign private key
-        run: |
-          echo "${COSIGN_PRIVATE_KEY}" > ./ghouls.key
-          chmod 0600 ./ghouls.key
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+      - uses: sigstore/cosign-installer@v3 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
+      - uses: anchore/sbom-action/download-syft@v0 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
       - name: Login to DockerHub
         uses: docker/login-action@v3 # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
         # https://docs.docker.com/docker-hub/access-tokens/
@@ -62,16 +58,17 @@ jobs:
           workdir: '/home/runner/work/ghouls/ghouls'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Clean up Cosign private key
-        run: shred -u ./ghouls.key
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   verify_signed_docker_images:
     runs-on: ubuntu-latest
+    needs: goreleaser
     permissions: {}
     strategy:
       matrix:
         registry: ['', 'ghcr.io/', 'quay.io/']
-        tag: ['latest', 'latest-arm64', 'latest-amd64']
+        tag: ['latest', 'distroless']
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
@@ -85,6 +82,7 @@ jobs:
 
   verify_signed_binaries:
     runs-on: ubuntu-latest
+    needs: goreleaser
     permissions: {}
     strategy:
       matrix:
@@ -109,6 +107,7 @@ jobs:
 
   verify_signed_archives:
     runs-on: ubuntu-latest
+    needs: goreleaser
     permissions: {}
     strategy:
       matrix:

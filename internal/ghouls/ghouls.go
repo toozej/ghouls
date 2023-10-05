@@ -1,13 +1,18 @@
 package ghouls
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/toozej/ghouls/assets"
 	"github.com/toozej/ghouls/templates"
@@ -21,39 +26,29 @@ var (
 	storageMutex sync.Mutex
 	data         URLData
 	dataFilePath string
+	username     string
+	password     string
 )
 
 func Serve() {
+	// get HTTP Basic Auth creds from env
+	getCreds()
+
 	// get data file path
 	getDataFilePath()
 
 	// Load URLs data file
 	loadDataFromFile(dataFilePath)
 
-	// Load the HTML template
-	tmpl := template.Must(template.ParseFS(&templates.Templates, "*.html"))
-
 	// Serve static files from the "static" directory
 	setupStaticAssets()
 
-	// Define a handler to render the template
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// You can pass data to the template if needed
-		data := struct {
-			URLs []string
-		}{
-			URLs: data.URLs, // Pass your list of URLs here
-		}
-
-		// Render the template with the data
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	})
-
-	http.HandleFunc("/add", addURL)
-	http.HandleFunc("/delete", deleteURLs)
-	http.HandleFunc("/list", listURLs)
+	// Handle various routes
+	http.HandleFunc("/", loginHandler(rootHandler))
+	http.HandleFunc("/add", loginHandler(addURL))
+	http.HandleFunc("/delete", loginHandler(deleteURLs))
+	http.HandleFunc("/list", loginHandler(listURLs))
+	http.HandleFunc("/health", healthHandler)
 
 	server := &http.Server{
 		Addr:         ":8080",
@@ -61,10 +56,61 @@ func Serve() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	fmt.Println("Ghouls is initialized and now listening & serving on port 8080")
+
 	if err := server.ListenAndServe(); err != nil {
 		fmt.Println("Error listening & serving on port 8080 with 10sec timeout", err)
 		return
 	}
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	// Load the HTML template
+	tmpl := template.Must(template.ParseFS(&templates.Templates, "*.html"))
+
+	// You can pass data to the template if needed
+	data := struct {
+		URLs []string
+	}{
+		URLs: data.URLs, // Pass your list of URLs here
+	}
+
+	// Render the template with the data
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte("OK")); err != nil { // nosemgrep: go.lang.security.audit.xss.no-direct-write-to-responsewriter.no-direct-write-to-responsewriter
+		fmt.Println("Error writing health page", err)
+		return
+	}
+}
+
+func loginHandler(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		suppliedUsername, suppliedPassword, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(suppliedUsername))
+			passwordHash := sha256.Sum256([]byte(suppliedPassword))
+			expectedUsernameHash := sha256.Sum256([]byte(username))
+			expectedPasswordHash := sha256.Sum256([]byte(password))
+
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
 }
 
 func getDataFilePath() {
@@ -79,6 +125,33 @@ func getDataFilePath() {
 	devDataFilePath := fmt.Sprintf("%s/data.json", cwd)
 	if _, err := os.Stat(devDataFilePath); err == nil {
 		dataFilePath = devDataFilePath
+	}
+}
+
+func getCreds() {
+	// Initialize Viper
+	viper.SetConfigFile(".env") // Specify the name of your .env file
+
+	// Enable reading environment variables
+	viper.AutomaticEnv()
+
+	// Read the .env file
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading .env file: %s\n", err)
+		os.Exit(1)
+	}
+
+	// get HTTP Basic Auth username and password from Viper
+	username = viper.GetString("BASIC_AUTH_USERNAME")
+	password = viper.GetString("BASIC_AUTH_PASSWORD")
+	if username == "" {
+		fmt.Println("basic auth username must be provided")
+		os.Exit(1)
+	}
+
+	if password == "" {
+		fmt.Println("basic auth password must be provided")
+		os.Exit(1)
 	}
 }
 
@@ -98,6 +171,12 @@ func addURL(w http.ResponseWriter, r *http.Request) {
 	if url != "" {
 		storageMutex.Lock()
 		defer storageMutex.Unlock()
+
+		// Check if the URL starts with "http://" or "https://"
+		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+			// If it doesn't start with either, prepend "https://"
+			url = "https://" + url
+		}
 
 		// Check if the URL already exists in the list
 		for _, existingURL := range data.URLs {

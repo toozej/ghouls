@@ -98,7 +98,11 @@ local-build: ## Run `go build` using locally installed golang toolchain
 	CGO_ENABLED=0 go build -o $(CURDIR)/out/ghouls -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/ghouls/
 
 local-run: ## Run locally built binary
-	$(CURDIR)/out/ghouls
+	if test -e $(CURDIR)/.env; then \
+		export `cat $(CURDIR)/.env | xargs` && $(CURDIR)/out/ghouls; \
+	else \
+		echo "no environment variables for ghouls project found in ./.env file. Exiting."; \
+	fi
 
 local-release-test: ## Build assets and test goreleaser config using locally installed golang toolchain and goreleaser
 	goreleaser check

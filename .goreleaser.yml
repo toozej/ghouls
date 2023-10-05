@@ -281,7 +281,8 @@ signs:
     output: true
     args:
       - 'sign-blob'
-      - '--key=ghouls.key'
+      - '--key=env://COSIGN_PRIVATE_KEY'
+      - '--yes'
       - '--output-signature=${signature}'
       - '${artifact}'
     artifacts: all
@@ -293,7 +294,8 @@ docker_signs:
     output: true
     args:
       - 'sign'
-      - '--key=ghouls.key'
+      - '--key=env://COSIGN_PRIVATE_KEY'
+      - '--yes'
       - '${artifact}'
 
 milestones:
