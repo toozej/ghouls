@@ -36,7 +36,7 @@ endif
 DEPLOY_HOSTNAME = $(shell grep DEPLOY_HOSTNAME ./.env | awk -F= '{print $$2}')
 DEPLOY_APPNAME = $(shell grep DEPLOY_APPNAME ./.env | awk -F= '{print $$2}')
 
-.PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-launch deploy-first-time deploy-rollback deploy pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
+.PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
 
 all: vet pre-commit clean test build verify run ## Run default workflow via Docker
 local: local-update-deps local-vendor local-vet pre-commit clean local-test local-cover local-build local-sign local-verify local-run ## Run default workflow using locally installed Golang toolchain
@@ -156,11 +156,22 @@ deploy-cert: ## Provision a SSL certificate for deployment in fly.io
 deploy-volume:
 	flyctl volumes list | grep ghouls_data || flyctl volume create ghouls_data --region sea --size 1 --count 1 --yes
 
+deploy-secrets: ## Deploy secrets to fly.io
+	if test ! -e $(CURDIR)/.env; then \
+		echo "No app secrets found, need to add them to ./.env. See README.md for more info"; \
+	fi
+	@while read -r SECRET; do \
+		if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]]; then \
+			flyctl secrets set $${SECRET}; \
+		fi; \
+	done < $(CURDIR)/.env
+	flyctl config env
+
 deploy-launch:
 	flyctl launch --local-only --now
 	flyctl scale count 1 --yes
 
-deploy-first-time: deploy-pre deploy-volume deploy-launch deploy-ip deploy-cert deploy-post ## First time deploy to fly.io
+deploy-first-time: deploy-pre deploy-volume deploy-secrets deploy-launch deploy-ip deploy-cert deploy-post ## First time deploy to fly.io
 
 deploy-only: ## Deploy locally built runtime image to fly.io
 	flyctl deploy $(CURDIR) --local-only
@@ -170,7 +181,7 @@ deploy-rollback: deploy-pre ## Rollback fly.io to last working image
 	ROLLBACK_IMAGE=`flyctl releases --image | grep -v failed | sed -n '2p' | awk '{print $$7}'`
 	flyctl deploy -i $$ROLLBACK_IMAGE --now 
 
-deploy: deploy-pre deploy-only deploy-post ## Deploy to fly.io
+deploy: deploy-pre deploy-secrets deploy-only deploy-post ## Deploy to fly.io
 
 pre-commit: pre-commit-install pre-commit-run ## Install and run pre-commit hooks
 
