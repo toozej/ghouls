@@ -129,17 +129,19 @@ func getDataFilePath() {
 }
 
 func getCreds() {
-	// Initialize Viper
-	viper.SetConfigFile(".env") // Specify the name of your .env file
+	if _, err := os.Stat(".env"); err == nil {
+		// Initialize Viper from .env file
+		viper.SetConfigFile(".env") // Specify the name of your .env file
+
+		// Read the .env file
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Printf("Error reading .env file: %s\n", err)
+			os.Exit(1)
+		}
+	}
 
 	// Enable reading environment variables
 	viper.AutomaticEnv()
-
-	// Read the .env file
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading .env file: %s\n", err)
-		os.Exit(1)
-	}
 
 	// get HTTP Basic Auth username and password from Viper
 	username = viper.GetString("BASIC_AUTH_USERNAME")

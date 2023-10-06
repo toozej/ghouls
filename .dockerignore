@@ -17,3 +17,4 @@ docker-compose.yml
 out
 ghouls.key
 fly.toml
+.env
