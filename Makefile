@@ -33,10 +33,10 @@ else
 	OPENER=open
 endif
 
-DEPLOY_HOSTNAME = $(shell grep DEPLOY_HOSTNAME ./.env | awk -F= '{print $$2}')
-DEPLOY_APPNAME = $(shell grep DEPLOY_APPNAME ./.env | awk -F= '{print $$2}')
-BASIC_AUTH_USERNAME = $(shell grep BASIC_AUTH_USERNAME ./.env | awk -F= '{print $$2}')
-BASIC_AUTH_PASSWORD = $(shell grep BASIC_AUTH_PASSWORD ./.env | awk -F= '{print $$2}')
+DEPLOY_HOSTNAME = $(shell test -n $$DEPLOY_HOSTNAME && echo $$DEPLOY_HOSTNAME || grep DEPLOY_HOSTNAME ./.env | awk -F= '{print $$2}')
+DEPLOY_APPNAME = $(shell test -n $$DEPLOY_APPNAME && echo $$DEPLOY_APPNAME || grep DEPLOY_APPNAME ./.env | awk -F= '{print $$2}')
+BASIC_AUTH_USERNAME = $(shell test -n $$BASIC_AUTH_USERNAME && echo $$BASIC_AUTH_USERNAME || grep BASIC_AUTH_USERNAME ./.env | awk -F= '{print $$2}')
+BASIC_AUTH_PASSWORD = $(shell test -n $$BASIC_AUTH_PASSWORD && echo $$BASIC_AUTH_PASSWORD || grep BASIC_AUTH_PASSWORD ./.env | awk -F= '{print $$2}')
 
 .PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify local-load-test install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy deploy-load-test pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
 
@@ -167,7 +167,7 @@ deploy-secrets: ## Deploy secrets to fly.io
 	fi
 	@while read -r SECRET; do \
 		if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]]; then \
-			flyctl secrets set $${SECRET}; \
+			flyctl secrets set --stage $${SECRET}; \
 		fi; \
 	done < $(CURDIR)/.env
 	flyctl config env

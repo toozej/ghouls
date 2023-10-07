@@ -86,7 +86,7 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/toozej/ghouls/main/README.md"
       - "--label=io.artifacthub.package.maintainers=[{\"name\":\"toozej\"}]"
       - "--label=io.artifacthub.package.license=GPLv3"
-      - "--label=org.opencontainers.image.description=Golang starter template"
+      - "--label=org.opencontainers.image.description=Ghouls"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -106,7 +106,7 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/toozej/ghouls/main/README.md"
       - "--label=io.artifacthub.package.maintainers=[{\"name\":\"toozej\"}]"
       - "--label=io.artifacthub.package.license=GPLv3"
-      - "--label=org.opencontainers.image.description=Golang starter template"
+      - "--label=org.opencontainers.image.description=Ghouls"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -127,7 +127,7 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/toozej/ghouls/main/README.md"
       - "--label=io.artifacthub.package.maintainers=[{\"name\":\"toozej\"}]"
       - "--label=io.artifacthub.package.license=GPLv3"
-      - "--label=org.opencontainers.image.description=Golang starter template"
+      - "--label=org.opencontainers.image.description=Ghouls"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -147,7 +147,7 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/toozej/ghouls/main/README.md"
       - "--label=io.artifacthub.package.maintainers=[{\"name\":\"toozej\"}]"
       - "--label=io.artifacthub.package.license=GPLv3"
-      - "--label=org.opencontainers.image.description=Golang starter template"
+      - "--label=org.opencontainers.image.description=Ghouls"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -232,7 +232,7 @@ nfpms:
     id: packages
     homepage: https://github.com/toozej/ghouls
     description: |-
-      Golang starter template
+      Go URL Sharing application
     maintainer: toozej
     license: GPLv3
     vendor: ghouls

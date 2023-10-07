@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/didip/tollbooth/v7"
+	"github.com/didip/tollbooth/v7/limiter"
 	"github.com/spf13/viper"
 
 	"github.com/toozej/ghouls/assets"
@@ -40,14 +43,19 @@ func Serve() {
 	// Load URLs data file
 	loadDataFromFile(dataFilePath)
 
+	// create a rate limiter with expirable token buckets:
+	// create a 5 request/second limiter and
+	// every token bucket in it will expire 1 hour after it was initially set.
+	rateLimiter := tollbooth.NewLimiter(5, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
+
 	// Serve static files from the "static" directory
 	setupStaticAssets()
 
 	// Handle various routes
-	http.HandleFunc("/", loginHandler(rootHandler))
-	http.HandleFunc("/add", loginHandler(addURL))
-	http.HandleFunc("/delete", loginHandler(deleteURLs))
-	http.HandleFunc("/list", loginHandler(listURLs))
+	http.Handle("/", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(rootHandler)))
+	http.Handle("/add", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(addURL)))
+	http.Handle("/delete", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(deleteURLs)))
+	http.Handle("/list", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(listURLs)))
 	http.HandleFunc("/health", healthHandler)
 
 	server := &http.Server{
@@ -163,6 +171,18 @@ func setupStaticAssets() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(fs))))
 }
 
+func isValidURL(inputURL string) bool {
+	// Check if the URL starts with "http://" or "https://"
+	if !strings.HasPrefix(inputURL, "http://") && !strings.HasPrefix(inputURL, "https://") {
+		// If it doesn't start with either, prepend "https://"
+		inputURL = "https://" + inputURL
+	}
+
+	// Ensure the URL is valid
+	_, err := url.ParseRequestURI(inputURL)
+	return err == nil
+}
+
 func addURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -170,15 +190,9 @@ func addURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url := r.FormValue("url")
-	if url != "" {
+	if url != "" && isValidURL(url) {
 		storageMutex.Lock()
 		defer storageMutex.Unlock()
-
-		// Check if the URL starts with "http://" or "https://"
-		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-			// If it doesn't start with either, prepend "https://"
-			url = "https://" + url
-		}
 
 		// Check if the URL already exists in the list
 		for _, existingURL := range data.URLs {
@@ -196,7 +210,7 @@ func addURL(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	} else {
-		http.Error(w, "URL is missing", http.StatusBadRequest)
+		http.Error(w, "URL is missing or invalid", http.StatusBadRequest)
 		return
 	}
 }
