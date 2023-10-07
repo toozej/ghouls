@@ -35,8 +35,10 @@ endif
 
 DEPLOY_HOSTNAME = $(shell grep DEPLOY_HOSTNAME ./.env | awk -F= '{print $$2}')
 DEPLOY_APPNAME = $(shell grep DEPLOY_APPNAME ./.env | awk -F= '{print $$2}')
+BASIC_AUTH_USERNAME = $(shell grep BASIC_AUTH_USERNAME ./.env | awk -F= '{print $$2}')
+BASIC_AUTH_PASSWORD = $(shell grep BASIC_AUTH_PASSWORD ./.env | awk -F= '{print $$2}')
 
-.PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
+.PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify local-load-test install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy deploy-load-test pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
 
 all: vet pre-commit clean test build verify run ## Run default workflow via Docker
 local: local-update-deps local-vendor local-vet pre-commit clean local-test local-cover local-build local-sign local-verify local-run ## Run default workflow using locally installed Golang toolchain
@@ -126,6 +128,9 @@ local-verify: get-cosign-pub-key ## Verify locally compiled binary
 	# cosign here assumes you're using Linux AMD64 binary
 	cosign verify-blob --key $(CURDIR)/ghouls.pub --signature $(CURDIR)/ghouls.sig $(CURDIR)/ghouls
 
+local-load-test: ## Run Vegeta binary to load test locally compiled binary
+	echo "GET http://$(BASIC_AUTH_USERNAME):$(BASIC_AUTH_PASSWORD)@localhost:8080/" | vegeta attack -duration=5s | tee results.bin | vegeta report
+
 install: local-build local-verify ## Install compiled binary to local machine
 	sudo cp $(CURDIR)/out/ghouls /usr/local/bin/ghouls
 	sudo chmod 0755 /usr/local/bin/ghouls
@@ -183,6 +188,9 @@ deploy-rollback: deploy-pre ## Rollback fly.io to last working image
 
 deploy: deploy-pre deploy-secrets deploy-only deploy-post ## Deploy to fly.io
 
+deploy-load-test: ## Run Vegeta binary to load test deployed site
+	echo "GET http://$(BASIC_AUTH_USERNAME):$(BASIC_AUTH_PASSWORD)@$(DEPLOY_HOSTNAME)/" | vegeta attack -duration=5s | tee results.bin | vegeta report
+
 pre-commit: pre-commit-install pre-commit-run ## Install and run pre-commit hooks
 
 pre-commit-install: ## Install pre-commit hooks and necessary binaries
@@ -212,6 +220,8 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 	go install github.com/google/go-licenses@latest
 	# go vuln check
 	go install golang.org/x/vuln/cmd/govulncheck@latest
+	# vegeta load testing tool
+	go install github.com/tsenart/vegeta@latest
 	# install and update pre-commits
 	pre-commit install
 	pre-commit autoupdate
