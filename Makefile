@@ -33,10 +33,16 @@ else
 	OPENER=open
 endif
 
-DEPLOY_HOSTNAME = $(shell test -n $$DEPLOY_HOSTNAME && echo $$DEPLOY_HOSTNAME || grep DEPLOY_HOSTNAME ./.env | awk -F= '{print $$2}')
-DEPLOY_APPNAME = $(shell test -n $$DEPLOY_APPNAME && echo $$DEPLOY_APPNAME || grep DEPLOY_APPNAME ./.env | awk -F= '{print $$2}')
-BASIC_AUTH_USERNAME = $(shell test -n $$BASIC_AUTH_USERNAME && echo $$BASIC_AUTH_USERNAME || grep BASIC_AUTH_USERNAME ./.env | awk -F= '{print $$2}')
-BASIC_AUTH_PASSWORD = $(shell test -n $$BASIC_AUTH_PASSWORD && echo $$BASIC_AUTH_PASSWORD || grep BASIC_AUTH_PASSWORD ./.env | awk -F= '{print $$2}')
+# List of variables to fetch from .env or environment
+VARIABLES := DEPLOY_APPNAME DEPLOY_HOSTNAME BASIC_AUTH_USERNAME BASIC_AUTH_PASSWORD
+
+# Define a function to fetch a variable from .env or environment
+define get_variable
+    $(eval $1 := $(if $(value $1),$(value $1),$(shell grep -E "^$1=" .env | cut -d'=' -f2)))
+endef
+
+# Fetch the variables
+$(foreach var,$(VARIABLES),$(call get_variable,$(var)))
 
 .PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify local-load-test install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy deploy-load-test pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
 
@@ -101,7 +107,7 @@ local-build: ## Run `go build` using locally installed golang toolchain
 
 local-run: ## Run locally built binary
 	if test -e $(CURDIR)/.env; then \
-		export `cat $(CURDIR)/.env | xargs` && $(CURDIR)/out/ghouls; \
+		export `cat $(CURDIR)/.env | xargs` && touch $(CURDIR)/data.json && $(CURDIR)/out/ghouls; \
 	else \
 		echo "no environment variables for ghouls project found in ./.env file. Exiting."; \
 	fi
@@ -162,14 +168,15 @@ deploy-volume:
 	flyctl volumes list | grep ghouls_data || flyctl volume create ghouls_data --region sea --size 1 --count 1 --yes
 
 deploy-secrets: ## Deploy secrets to fly.io
-	if test ! -e $(CURDIR)/.env; then \
+	@if test -e $(CURDIR)/.env; then \
+		while read -r SECRET; do \
+			if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]]; then \
+				flyctl secrets set --stage $${SECRET}; \
+			fi; \
+		done < $(CURDIR)/.env; \
+	else \
 		echo "No app secrets found, need to add them to ./.env. See README.md for more info"; \
 	fi
-	@while read -r SECRET; do \
-		if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]]; then \
-			flyctl secrets set --stage $${SECRET}; \
-		fi; \
-	done < $(CURDIR)/.env
 	flyctl config env
 
 deploy-launch:
@@ -178,8 +185,8 @@ deploy-launch:
 
 deploy-first-time: deploy-pre deploy-volume deploy-secrets deploy-launch deploy-ip deploy-cert deploy-post ## First time deploy to fly.io
 
-deploy-only: ## Deploy locally built runtime image to fly.io
-	flyctl deploy $(CURDIR) --local-only
+deploy-only: ## Deploy built runtime image to fly.io
+	flyctl deploy $(CURDIR) --remote-only --now
 	flyctl status
 
 deploy-rollback: deploy-pre ## Rollback fly.io to last working image
