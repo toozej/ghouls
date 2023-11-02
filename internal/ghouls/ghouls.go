@@ -13,9 +13,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/didip/tollbooth/v7"
-	"github.com/didip/tollbooth/v7/limiter"
+	// "github.com/didip/tollbooth/v7"
+	// "github.com/didip/tollbooth/v7/limiter"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	"github.com/spf13/viper"
+
+	// "github.com/throttled/throttled/v2"
+	// "github.com/throttled/throttled/v2/store/memstore"
 
 	"github.com/toozej/ghouls/assets"
 	"github.com/toozej/ghouls/templates"
@@ -43,25 +50,53 @@ func Serve() {
 	// Load URLs data file
 	loadDataFromFile(dataFilePath)
 
-	// create a rate limiter with expirable token buckets:
-	// create a 5 request/second limiter and
-	// every token bucket in it will expire 1 hour after it was initially set.
-	rateLimiter := tollbooth.NewLimiter(5, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
+	// rate limiter setup
+	rateLimitOpts := httprate.Limit(
+		10,             // requests
+		10*time.Second, // per duration
+		httprate.WithKeyFuncs(httprate.KeyByIP, httprate.KeyByEndpoint),
+	)
+
+	// CORS setup
+	corsOpts := cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}
+
+	// csrfProtection := nosurf.NewPure
+
+	// setup router
+	r := chi.NewRouter()
+
+	// setup middlewares
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(rateLimitOpts)
+	r.Use(cors.Handler(corsOpts))
+	r.Use(middleware.Recoverer)
 
 	// Serve static files from the "static" directory
-	setupStaticAssets()
+	setupStaticAssets(r)
 
 	// Handle various routes
-	http.Handle("/", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(rootHandler)))
-	http.Handle("/add", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(addURL)))
-	http.Handle("/delete", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(deleteURLs)))
-	http.Handle("/list", tollbooth.LimitFuncHandler(rateLimiter, loginHandler(listURLs)))
-	http.HandleFunc("/health", healthHandler)
+	r.Get("/", loginHandler(rootHandler))
+	r.Post("/add", loginHandler(addURL))
+	r.Post("/delete", loginHandler(deleteURLs))
+	r.Post("/list", loginHandler(listURLs))
+	r.Get("/health", healthHandler)
 
 	server := &http.Server{
 		Addr:         ":8080",
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
+		Handler:      r,
 	}
 
 	fmt.Println("Ghouls is initialized and now listening & serving on port 8080")
@@ -165,10 +200,10 @@ func getCreds() {
 	}
 }
 
-func setupStaticAssets() {
+func setupStaticAssets(router *chi.Mux) {
 	// serve regular static assets
 	fs := &assets.Assets
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(fs))))
+	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(fs))))
 }
 
 func isValidURL(inputURL string) bool {

@@ -44,10 +44,11 @@ endef
 # Fetch the variables
 $(foreach var,$(VARIABLES),$(call get_variable,$(var)))
 
-.PHONY: all vet test build verify run up down distroless-build distroless-run local local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify local-load-test install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy deploy-load-test pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
+.PHONY: all vet test build verify run up down distroless-build distroless-run local local-dev local-vet local-test local-cover local-run local-release-test local-release local-sign local-verify local-release-verify local-load-test install get-cosign-pub-key docker-login deploy-pre deploy-only deploy-post deploy-ip deploy-cert deploy-volume deploy-secrets deploy-launch deploy-first-time deploy-rollback deploy deploy-load-test pre-commit-install pre-commit-run pre-commit pre-reqs update-golang-version docs docs-generate docs-serve clean help
 
 all: vet pre-commit clean test build verify run ## Run default workflow via Docker
 local: local-update-deps local-vendor local-vet pre-commit clean local-test local-cover local-build local-sign local-verify local-run ## Run default workflow using locally installed Golang toolchain
+local-dev: local-vendor local-vet clean local-build local-run ## Quick development workflow using locally installed Golang toolchain
 local-release-verify: local-release local-sign local-verify ## Release and verify using locally installed Golang toolchain
 pre-reqs: pre-commit-install ## Install pre-commit hooks and necessary binaries
 
@@ -92,6 +93,7 @@ local-vet: ## Run `go vet` using locally installed golang toolchain
 	go vet $(CURDIR)/...
 
 local-vendor: ## Run `go mod vendor` using locally installed golang toolchain
+	go mod tidy
 	go mod vendor
 
 local-test: ## Run `go test` using locally installed golang toolchain
@@ -125,14 +127,14 @@ local-release: local-test docker-login ## Release assets using locally installed
 
 local-sign: local-test ## Sign locally installed golang toolchain and cosign
 	if test -e $(CURDIR)/ghouls.key && test -e $(CURDIR)/.env; then \
-		export `cat $(CURDIR)/.env | xargs` && cosign sign-blob --key=$(CURDIR)/ghouls.key --output-signature=$(CURDIR)/ghouls.sig $(CURDIR)/ghouls; \
+		export `cat $(CURDIR)/.env | xargs` && cosign sign-blob --key=$(CURDIR)/ghouls.key --output-signature=$(CURDIR)/ghouls.sig $(CURDIR)/out/ghouls; \
 	else \
 		echo "no cosign private key found at $(CURDIR)/ghouls.key. Cannot release."; \
 	fi
 
 local-verify: get-cosign-pub-key ## Verify locally compiled binary
 	# cosign here assumes you're using Linux AMD64 binary
-	cosign verify-blob --key $(CURDIR)/ghouls.pub --signature $(CURDIR)/ghouls.sig $(CURDIR)/ghouls
+	cosign verify-blob --key $(CURDIR)/ghouls.pub --signature $(CURDIR)/ghouls.sig $(CURDIR)/out/ghouls
 
 local-load-test: ## Run Vegeta binary to load test locally compiled binary
 	echo "GET http://$(BASIC_AUTH_USERNAME):$(BASIC_AUTH_PASSWORD)@localhost:8080/" | vegeta attack -duration=5s | tee results.bin | vegeta report
@@ -229,6 +231,8 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	# vegeta load testing tool
 	go install github.com/tsenart/vegeta@latest
+	# gokart static vulnerability check
+	go install github.com/praetorian-inc/gokart@latest
 	# install and update pre-commits
 	pre-commit install
 	pre-commit autoupdate
@@ -236,7 +240,9 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 pre-commit-run: ## Run pre-commit hooks against all files
 	pre-commit run --all-files
 	# manually run the following checks since their pre-commits aren't working or don't exist
-	# go-licenses report github.com/toozej/ghouls/cmd/ghouls
+	# gokart disabled until https://github.com/praetorian-inc/gokart/issues/92 is fixed
+	# gokart ./...
+	go-licenses report github.com/toozej/ghouls/cmd/ghouls
 	govulncheck ./...
 
 update-golang-version: ## Update to latest Golang version across the repo
