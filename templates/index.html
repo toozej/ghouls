@@ -12,7 +12,8 @@
     <!-- Form to add a new URL -->
     <form action="/add" method="post">
         <label for="url">Add URL:</label>
-        <input type="text" id="url" name="url" required>
+	    <input type="text" id="url" name="url" required>
+	    {{ .CsrfField }}
         <button type="submit">Add</button>
     </form>
 
@@ -26,7 +27,8 @@
                     <a href="{{.}}" target="_blank">{{.}}</a> <!-- nosemgrep -->
                 </li>
             {{end}}
-        </ul>
+	    </ul>
+	    {{ .CsrfField }}
         <button type="submit">Delete Selected</button>
     </form>
 </body>

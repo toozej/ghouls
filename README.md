@@ -5,6 +5,7 @@ Simple Go-based URL Bookmarking Service
 - /add
 - /delete
 - /list
+- /health
 
 ## Add new URL to ghouls via cURL
 ```bash
@@ -48,6 +49,14 @@ curl -X POST -u username:password -d "url=https://exampleurltoadd.com" http://gh
     - SNYK_TOKEN
     - COSIGN_PRIVATE_KEY
     - COSIGN_PASSWORD
+    - BASIC_AUTH_USERNAME
+    - BASIC_AUTH_PASSWORD
+    - CSRF_SECRET_KEY
+        - easily generated with:
+            - `python3 -c "from secrets import token_hex;print(token_hex(16))"`
+            - `openssl rand -hex 16`
+    - LOCAL_DEV
+        - generally "false"
 - set up new repository in quay.io web console
     - (DockerHub and GitHub Container Registry do this automatically on first push/publish)
     - name must match Git repo name

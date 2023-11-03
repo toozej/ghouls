@@ -13,16 +13,12 @@ import (
 	"sync"
 	"time"
 
-	// "github.com/didip/tollbooth/v7"
-	// "github.com/didip/tollbooth/v7/limiter"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
+	"github.com/gorilla/csrf"
 	"github.com/spf13/viper"
-
-	// "github.com/throttled/throttled/v2"
-	// "github.com/throttled/throttled/v2/store/memstore"
 
 	"github.com/toozej/ghouls/assets"
 	"github.com/toozej/ghouls/templates"
@@ -38,11 +34,17 @@ var (
 	dataFilePath string
 	username     string
 	password     string
+	// csrfKey must be 32-bytes long
+	csrfKey  []byte
+	localDev bool
 )
 
 func Serve() {
-	// get HTTP Basic Auth creds from env
-	getCreds()
+	// set defaults
+	localDev = false
+
+	// get config items from env
+	getEnvVars()
 
 	// get data file path
 	getDataFilePath()
@@ -59,17 +61,20 @@ func Serve() {
 
 	// CORS setup
 	corsOpts := cors.Options{
-		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
-		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		ExposedHeaders:   []string{"Link", "X-CSRF-Token"},
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}
 
-	// csrfProtection := nosurf.NewPure
+	// CSRF protection setup
+	CSRFMiddleware := csrf.Protect(
+		csrfKey,
+		csrf.Secure(!localDev),             // false in development only!
+		csrf.RequestHeader("X-CSRF-Token"), // Must be in CORS Allowed and Exposed Headers
+	)
 
 	// setup router
 	r := chi.NewRouter()
@@ -80,6 +85,7 @@ func Serve() {
 	r.Use(middleware.Logger)
 	r.Use(rateLimitOpts)
 	r.Use(cors.Handler(corsOpts))
+	r.Use(CSRFMiddleware)
 	r.Use(middleware.Recoverer)
 
 	// Serve static files from the "static" directory
@@ -113,9 +119,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	// You can pass data to the template if needed
 	data := struct {
-		URLs []string
+		URLs      []string
+		CsrfField template.HTML
 	}{
-		URLs: data.URLs, // Pass your list of URLs here
+		URLs:      data.URLs,             // Pass your list of URLs here
+		CsrfField: csrf.TemplateField(r), // Pass the CSRF token here
 	}
 
 	// Render the template with the data
@@ -171,7 +179,7 @@ func getDataFilePath() {
 	}
 }
 
-func getCreds() {
+func getEnvVars() {
 	if _, err := os.Stat(".env"); err == nil {
 		// Initialize Viper from .env file
 		viper.SetConfigFile(".env") // Specify the name of your .env file
@@ -198,6 +206,14 @@ func getCreds() {
 		fmt.Println("basic auth password must be provided")
 		os.Exit(1)
 	}
+
+	// get CSRF key and local development true/false from Viper
+	csrfKey = []byte(viper.GetString("CSRF_SECRET_KEY"))
+	if len(csrfKey) == 0 {
+		fmt.Println("CSRF secret key must be provided")
+		os.Exit(1)
+	}
+	localDev = viper.GetBool("LOCAL_DEV")
 }
 
 func setupStaticAssets(router *chi.Mux) {

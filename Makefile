@@ -61,7 +61,7 @@ test: ## Run `go test` in Docker
 	@grep -v -e " 1$$" c.out
 
 build: ## Build Docker image, including running tests
-	docker build -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest .
+	docker build -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . --no-cache
 
 get-cosign-pub-key: ## Get ghouls Cosign public key from GitHub
 	test -f $(CURDIR)/ghouls.pub || curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
@@ -172,7 +172,7 @@ deploy-volume:
 deploy-secrets: ## Deploy secrets to fly.io
 	@if test -e $(CURDIR)/.env; then \
 		while read -r SECRET; do \
-			if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]]; then \
+			if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]] || [[ "$${SECRET}" =~ .*CSRF_SECRET.* ]]; then \
 				flyctl secrets set --stage $${SECRET}; \
 			fi; \
 		done < $(CURDIR)/.env; \
