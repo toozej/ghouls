@@ -233,3 +233,4 @@ jobs:
           DEPLOY_APPNAME: ${{ secrets.DEPLOY_APPNAME }}
           BASIC_AUTH_USERNAME: ${{ secrets.BASIC_AUTH_USERNAME }}
           BASIC_AUTH_PASSWORD: ${{ secrets.BASIC_AUTH_PASSWORD }}
+          CSRF_SECRET_KEY: ${{ secrets.CSRF_SECRET_KEY }}

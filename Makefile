@@ -171,13 +171,19 @@ deploy-volume:
 
 deploy-secrets: ## Deploy secrets to fly.io
 	@if test -e $(CURDIR)/.env; then \
+		echo "Trying to load app secrets from .env file"; \
 		while read -r SECRET; do \
-			if [[ "$${SECRET}" =~ .*BASIC_AUTH.* ]] || [[ "$${SECRET}" =~ .*CSRF_SECRET.* ]]; then \
+			if [[ "$${SECRET}" =~ .*BASIC_AUTH.*|.*SECRET.* ]]; then \
 				flyctl secrets set --stage $${SECRET}; \
 			fi; \
 		done < $(CURDIR)/.env; \
 	else \
-		echo "No app secrets found, need to add them to ./.env. See README.md for more info"; \
+		echo "Trying to load app secrets from environment"; \
+		while read -r SECRET; do \
+			if [[ "$${SECRET}" =~ .*BASIC_AUTH.*|.*SECRET.* ]]; then \
+				flyctl secrets set --stage $${SECRET}; \
+			fi; \
+		done < <(env); \
 	fi
 	flyctl config env
 
