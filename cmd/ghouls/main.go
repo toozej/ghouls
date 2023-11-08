@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	_ "go.uber.org/automaxprocs"
 
 	"github.com/toozej/ghouls/internal/ghouls"
 	"github.com/toozej/ghouls/pkg/man"
