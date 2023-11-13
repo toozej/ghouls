@@ -10,15 +10,15 @@
     <h1>Ghouls</h1>
 
     <!-- Form to add a new URL -->
-    <form action="/add" method="post">
+    <form action="/add" method="post"> <!-- nosemgrep -->
         <label for="url">Add URL:</label>
 	    <input type="text" id="url" name="url" required>
-	    {{ .CsrfField }}
+	    {{ .CsrfField }} <!-- nosemgrep -->
         <button type="submit">Add</button>
     </form>
 
     <!-- Form to delete selected URLs -->
-    <form action="/delete" method="post">
+    <form action="/delete" method="post"> <!-- nosemgrep -->
         <h2>My URLs</h2>
         <ul>
             {{range .URLs}}
@@ -28,7 +28,7 @@
                 </li>
             {{end}}
 	    </ul>
-	    {{ .CsrfField }}
+	    {{ .CsrfField }} <!-- nosemgrep -->
         <button type="submit">Delete Selected</button>
     </form>
 </body>
