@@ -105,7 +105,7 @@ local-cover: ## View coverage report in web browser
 	go tool cover -html=c.out
 
 local-build: ## Run `go build` using locally installed golang toolchain
-	CGO_ENABLED=0 go build -o $(CURDIR)/out/ghouls -ldflags="$(LDFLAGS)" $(CURDIR)/cmd/ghouls/
+	CGO_ENABLED=0 go build -o $(CURDIR)/out/ghouls -ldflags="$(LDFLAGS)" $(CURDIR)/
 
 local-run: ## Run locally built binary
 	if test -e $(CURDIR)/.env; then \
@@ -252,7 +252,7 @@ pre-commit-run: ## Run pre-commit hooks against all files
 	govulncheck ./...
 
 update-golang-version: ## Update to latest Golang version across the repo
-	@VERSION=`curl -s "https://go.dev/dl/?mode=json" | jq -r '.[0].version' | sed 's/go//'`; \
+	@VERSION=`curl -s "https://go.dev/dl/?mode=json" | jq -r '.[0].version' | sed 's/go//' | cut -d '.' -f 1,2`; \
 	echo "Updating Golang to $$VERSION"; \
 	./scripts/update_golang_version.sh $$VERSION
 

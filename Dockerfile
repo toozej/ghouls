@@ -19,7 +19,7 @@ RUN go test -coverprofile c.out -v ./...
 FROM init as build
 ARG LDFLAGS
 
-RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" ./cmd/ghouls/
+RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" ./
 
 # runtime image
 FROM scratch

@@ -52,17 +52,7 @@ repos:
       - id: yamlfmt
         args: [--mapping, "2", --sequence, "4", --offset, "2", --width, "88", --preserve-quotes]
 
-  # Golang formatting, static analysis, and linting
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
-    hooks:
-      - id: go-fmt
-      - id: go-imports
-      - id: golangci-lint
-      - id: go-unit-tests
-      - id: go-build
-
-  # Golang security and static analysis
+  # Golang formatting, linting, security and static analysis
   - repo: https://github.com/tekwizely/pre-commit-golang
     rev: v1.0.0-rc.1
     hooks:
@@ -70,6 +60,10 @@ repos:
       - id: go-staticcheck-mod
       - id: go-critic
       - id: go-structslop-mod
+      - id: go-fmt
+      - id: go-imports
+      - id: golangci-lint-mod
+      - id: go-test-mod
 
   # run shellcheck on Bash scripts
   - repo: https://github.com/koalaman/shellcheck-precommit
@@ -99,7 +93,7 @@ repos:
 
   # run semgrep on all known filetypes
   - repo: https://github.com/returntocorp/semgrep
-    rev: 'v1.48.0'
+    rev: 'v1.50.0'
     hooks:
       - id: semgrep
         # See https://semgrep.dev/explore to select a ruleset and copy its URL

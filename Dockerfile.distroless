@@ -19,10 +19,10 @@ RUN go test -coverprofile c.out -v ./...
 FROM init as build
 ARG LDFLAGS
 
-RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" ./cmd/ghouls/
+RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" ./
 
 # runtime image including CA certs and tzdata
-FROM gcr.io/distroless/static-debian11:latest
+FROM gcr.io/distroless/static-debian12:latest
 # Copy our static executable.
 COPY --from=build /go/ghouls/ghouls /go/bin/ghouls
 # Expose port for publishing as web service
