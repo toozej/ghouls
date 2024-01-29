@@ -44,9 +44,10 @@ func Serve() {
 
 	// Handle various routes
 	r.Get("/", loginHandler(rootHandler))
+	r.Head("/", loginHandler(rootHandler))
 	r.Post("/add", loginHandler(addURL))
 	r.Post("/delete", loginHandler(deleteURLs))
-	r.Post("/list", loginHandler(listURLs))
+	r.Get("/list", loginHandler(listURLs))
 	r.Get("/health", healthHandler)
 
 	server := &http.Server{

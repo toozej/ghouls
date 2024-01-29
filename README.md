@@ -8,10 +8,6 @@ Simple Go-based URL Bookmarking Service
 - /health
 
 ## Add new URL to ghouls via cURL
-```bash
-curl -X POST -d "url=https://exampleurltoadd.com" http://ghouls-hostname-here/add
-```
-
 With HTTP Basic Auth:
 ```bash
 curl -X POST -u username:password -d "url=https://exampleurltoadd.com" http://ghouls-hostname-here/add
