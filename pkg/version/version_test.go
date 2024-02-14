@@ -9,7 +9,9 @@ func TestGet(t *testing.T) {
 	expectedInfo := Info{
 		Commit:  Commit,
 		Version: Version,
+		Branch:  Branch,
 		BuiltAt: BuiltAt,
+		Builder: Builder,
 	}
 
 	// Call Get() and check the result

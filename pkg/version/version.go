@@ -20,7 +20,9 @@ var (
 type Info struct {
 	Commit  string
 	Version string
+	Branch  string
 	BuiltAt string
+	Builder string
 }
 
 // Get creates an initialized Info object
@@ -28,7 +30,9 @@ func Get() (Info, error) {
 	return Info{
 		Commit:  Commit,
 		Version: Version,
+		Branch:  Branch,
 		BuiltAt: BuiltAt,
+		Builder: Builder,
 	}, nil
 }
 

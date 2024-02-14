@@ -18,7 +18,7 @@ BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 
 # Linker flags
 PKG = $(shell head -n 1 go.mod | cut -c 8-)
-VER = $(PKG)/version
+VER = $(PKG)/pkg/version
 LDFLAGS = -s -w \
 	-X $(VER).Version=$(or $(VERSION),unknown) \
 	-X $(VER).Commit=$(or $(COMMIT),unknown) \
