@@ -59,7 +59,8 @@ repos:
       - id: go-sec-mod
       - id: go-staticcheck-mod
       - id: go-critic
-      - id: go-structslop-mod
+      # structslop disabled until https://github.com/orijtech/structslop/pull/63 is merged
+      # - id: go-structslop-mod
       - id: go-fmt
       - id: go-imports
       - id: golangci-lint-mod
