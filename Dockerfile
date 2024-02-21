@@ -1,5 +1,5 @@
 # setup project and deps
-FROM golang:1.21-bullseye AS init
+FROM golang:1.22-bullseye AS init
 
 WORKDIR /go/ghouls/
 
