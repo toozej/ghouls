@@ -226,7 +226,7 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 	# checkmake
 	go install github.com/mrtazz/checkmake/cmd/checkmake@latest
 	# goreleaser
-	go install github.com/goreleaser/goreleaser@latest
+	go install github.com/goreleaser/goreleaser/v2@latest
 	# syft
 	command -v syft || curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 	# cosign
@@ -248,7 +248,7 @@ pre-commit-run: ## Run pre-commit hooks against all files
 	# manually run the following checks since their pre-commits aren't working or don't exist
 	# gokart disabled until https://github.com/praetorian-inc/gokart/issues/92 is fixed
 	# gokart ./...
-	go-licenses report github.com/toozej/ghouls/cmd/ghouls
+	go-licenses report github.com/toozej/ghouls/cmd/ghouls --ignore `go list std | awk 'NR > 1 { printf(",") } { printf("%s",$$0) } END { print "" }'`
 	govulncheck ./...
 
 update-golang-version: ## Update to latest Golang version across the repo

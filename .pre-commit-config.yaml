@@ -4,7 +4,7 @@ minimum_pre_commit_version: "1.15"
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
         name: Check for valid YAML syntax in repo
@@ -74,7 +74,7 @@ repos:
 
   # lint Dockerfile
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.1-beta
+    rev: v2.13.0-beta
     hooks:
       - id: hadolint-docker
         args: ["--ignore", "DL3007"]
@@ -94,7 +94,7 @@ repos:
 
   # run semgrep on all known filetypes
   - repo: https://github.com/returntocorp/semgrep
-    rev: 'v1.66.0'
+    rev: 'v1.73.0'
     hooks:
       - id: semgrep
         # See https://semgrep.dev/explore to select a ruleset and copy its URL
