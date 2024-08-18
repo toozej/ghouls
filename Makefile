@@ -220,7 +220,7 @@ pre-commit-install: ## Install pre-commit hooks and necessary binaries
 	# go-critic
 	go install github.com/go-critic/go-critic/cmd/gocritic@latest
 	# structslop
-	go install github.com/orijtech/structslop/cmd/structslop@latest
+	# go install github.com/orijtech/structslop/cmd/structslop@latest
 	# shellcheck
 	command -v shellcheck || sudo dnf install -y ShellCheck || sudo apt install -y shellcheck
 	# checkmake
