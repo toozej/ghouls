@@ -21,6 +21,9 @@ jobs:
         run: |
           pip install pre-commit
           make pre-commit
+      - name: Run tests
+        run: |
+          make test
 
   gitleaks:
     name: gitleaks

@@ -8,18 +8,20 @@ RUN go mod download
 
 COPY . ./
 
-FROM init as vet
+FROM init AS vet
 RUN go vet ./...
 
 # run tests
-FROM init as test
-RUN go test -coverprofile c.out -v ./...
+FROM init AS test
+RUN go test -coverprofile c.out -v ./... && \
+	echo "Statements missing coverage" && \
+	grep -v -e " 1$" c.out
 
 # build binary
-FROM init as build
+FROM init AS build
 ARG LDFLAGS
 
-RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" ./
+RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}"
 
 # runtime image
 FROM scratch

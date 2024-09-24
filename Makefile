@@ -56,12 +56,10 @@ vet: ## Run `go vet` in Docker
 	docker build --target vet -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . 
 
 test: ## Run `go test` in Docker
-	docker build --target test -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . 
-	@echo -e "\nStatements missing coverage"
-	@grep -v -e " 1$$" c.out
+	docker build --progress=plain --target test -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest .
 
 build: ## Build Docker image, including running tests
-	docker build -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest . --no-cache
+	docker build -f $(CURDIR)/Dockerfile -t toozej/ghouls:latest .
 
 get-cosign-pub-key: ## Get ghouls Cosign public key from GitHub
 	test -f $(CURDIR)/ghouls.pub || curl --silent https://raw.githubusercontent.com/toozej/ghouls/main/ghouls.pub -O
@@ -105,7 +103,7 @@ local-cover: ## View coverage report in web browser
 	go tool cover -html=c.out
 
 local-build: ## Run `go build` using locally installed golang toolchain
-	CGO_ENABLED=0 go build -o $(CURDIR)/out/ghouls -ldflags="$(LDFLAGS)" $(CURDIR)/
+	CGO_ENABLED=0 go build -o $(CURDIR)/out/ -ldflags="$(LDFLAGS)"
 
 local-run: ## Run locally built binary
 	if test -e $(CURDIR)/.env; then \
