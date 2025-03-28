@@ -1,4 +1,11 @@
 # ghouls
+
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toozej/ghouls)
+[![Go Report Card](https://goreportcard.com/badge/github.com/toozej/ghouls)](https://goreportcard.com/report/github.com/toozej/ghouls)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/toozej/ghouls/cicd.yaml)
+![Docker Pulls](https://img.shields.io/docker/pulls/toozej/ghouls)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/toozej/ghouls/total)
+
 Simple Go-based URL Bookmarking Service
 
 ## Endpoints
