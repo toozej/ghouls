@@ -6,6 +6,10 @@
 ![Docker Pulls](https://img.shields.io/docker/pulls/toozej/ghouls)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/toozej/ghouls/total)
 
+
+# ARCHIVED AS OF JUNE 2025
+
+
 Simple Go-based URL Bookmarking Service
 
 ## Endpoints
