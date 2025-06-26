@@ -3,9 +3,7 @@ package ghouls
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -60,18 +58,6 @@ func getEnvVars() {
 		os.Exit(1)
 	}
 	localDev = viper.GetBool("LOCAL_DEV")
-}
-
-func isValidURL(inputURL string) bool {
-	// Check if the URL starts with "http://" or "https://"
-	if !strings.HasPrefix(inputURL, "http://") && !strings.HasPrefix(inputURL, "https://") {
-		// If it doesn't start with either, prepend "https://"
-		inputURL = "https://" + inputURL
-	}
-
-	// Ensure the URL is valid
-	_, err := url.ParseRequestURI(inputURL)
-	return err == nil
 }
 
 func saveDataToFile(dataFilePath string) {

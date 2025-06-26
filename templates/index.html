@@ -2,35 +2,331 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ghouls</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghouls - URL Bookmarking Service</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" type="text/css" href="/static/styles.css">
 </head>
 <body>
-    <h1>Ghouls</h1>
+    <header class="header">
+        <div class="container">
+            <h1>👻 Ghouls</h1>
+            <p class="subtitle">Your Personal URL Bookmarking Service</p>
+        </div>
+    </header>
 
-    <!-- Form to add a new URL -->
-    <form action="/add" method="post"> <!-- nosemgrep -->
-        <label for="url">Add URL:</label>
-	    <input type="text" id="url" name="url" required>
-	    {{ .CsrfField }} <!-- nosemgrep -->
-        <button type="submit">Add</button>
-    </form>
+    <div class="container">
+        <!-- Add URL Form -->
+        <div class="card">
+            <h2 class="card-title">
+                <span>➕</span>
+                Add New URL
+            </h2>
+            <form action="/add" method="post" class="add-form"> <!-- nosemgrep -->
+                <input type="url" 
+                       id="url" 
+                       name="url" 
+                       class="form-input" 
+                       placeholder="Enter URL (e.g., https://example.com)" 
+                       required>
+                {{ .CsrfField }}
+                <button type="submit" class="btn btn-primary">Add URL</button>
+            </form>
+        </div>
 
-    <!-- Form to delete selected URLs -->
-    <form action="/delete" method="post"> <!-- nosemgrep -->
-        <h2>My URLs</h2>
-        <ul>
-            {{range .URLs}}
-                <li>
-                    <input type="checkbox" name="urlsToDelete" value="{{.}}">
-                    <a href="{{.}}" target="_blank">{{.}}</a> <!-- nosemgrep -->
-                </li>
+        <!-- URL Management -->
+        <div class="card">
+            <h2 class="card-title">
+                <span>🔗</span>
+                My Bookmarks
+                <span id="url-count" class="url-domain">{{len .URLs}} URLs</span>
+            </h2>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" 
+                           id="search-input" 
+                           class="form-input" 
+                           placeholder="🔍 Search URLs..."
+                           autocomplete="off">
+                </div>
+                <div class="filter-controls">
+                    <select id="sort-select" class="sort-select">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="alphabetical">A-Z</option>
+                        <option value="domain">By Domain</option>
+                    </select>
+                    <button type="button" id="select-all-btn" class="btn btn-secondary btn-sm">
+                        Select All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selection Actions -->
+            <div id="selection-actions" class="selection-actions">
+                <span class="selection-count">
+                    <span id="selected-count">0</span> URLs selected
+                </span>
+                <button type="button" id="delete-selected-btn" class="btn btn-danger btn-sm">
+                    🗑️ Delete Selected
+                </button>
+                <button type="button" id="clear-selection-btn" class="btn btn-secondary btn-sm">
+                    Clear Selection
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat-item">
+                    <span>📊</span>
+                    <span>Total: <strong id="total-count">{{len .URLs}}</strong></span>
+                </div>
+                <div class="stat-item">
+                    <span>👁️</span>
+                    <span>Visible: <strong id="visible-count">{{len .URLs}}</strong></span>
+                </div>
+                <div class="stat-item">
+                    <span>🌐</span>
+                    <span>Domains: <strong id="domain-count">0</strong></span>
+                </div>
+            </div>
+
+            <!-- URL List -->
+            {{if .URLs}}
+                <form id="delete-form" action="/delete" method="post"> <!-- nosemgrep -->
+                    {{ .CsrfField }}
+                    <ul id="url-list" class="url-list">
+                        {{range .URLs}}
+                            <li class="url-item" data-url="{{.}}" data-domain="">
+                                <input type="checkbox" 
+                                       name="urlsToDelete" 
+                                       value="{{.}}" 
+                                       class="url-checkbox">
+                                <a href="{{.}}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="url-link">{{.}}</a> <!-- nosemgrep -->
+                                <span class="url-domain"></span>
+                            </li>
+                        {{end}}
+                    </ul>
+                </form>
+            {{else}}
+                <div class="empty-state">
+                    <h3>No URLs Yet</h3>
+                    <p>Add your first URL using the form above to get started!</p>
+                </div>
             {{end}}
-	    </ul>
-	    {{ .CsrfField }} <!-- nosemgrep -->
-        <button type="submit">Delete Selected</button>
-    </form>
+        </div>
+    </div>
+
+    <script>
+        // URL management functionality
+        class URLManager {
+            constructor() {
+                this.urlItems = document.querySelectorAll('.url-item');
+                this.searchInput = document.getElementById('search-input');
+                this.sortSelect = document.getElementById('sort-select');
+                this.selectAllBtn = document.getElementById('select-all-btn');
+                this.deleteSelectedBtn = document.getElementById('delete-selected-btn');
+                this.clearSelectionBtn = document.getElementById('clear-selection-btn');
+                this.selectionActions = document.getElementById('selection-actions');
+                this.selectedCount = document.getElementById('selected-count');
+                this.deleteForm = document.getElementById('delete-form');
+                
+                this.init();
+            }
+            
+            init() {
+                this.extractDomains();
+                this.updateStats();
+                this.bindEvents();
+                this.sortUrls('newest');
+            }
+            
+            extractDomains() {
+                this.urlItems.forEach(item => {
+                    const url = item.dataset.url;
+                    try {
+                        const domain = new URL(url).hostname.replace('www.', '');
+                        item.dataset.domain = domain;
+                        item.querySelector('.url-domain').textContent = domain;
+                    } catch (e) {
+                        item.dataset.domain = 'invalid';
+                        item.querySelector('.url-domain').textContent = 'invalid';
+                    }
+                });
+            }
+            
+            bindEvents() {
+                // Search functionality
+                this.searchInput.addEventListener('input', (e) => {
+                    this.filterUrls(e.target.value);
+                });
+                
+                // Sort functionality
+                this.sortSelect.addEventListener('change', (e) => {
+                    this.sortUrls(e.target.value);
+                });
+                
+                // Select all functionality
+                this.selectAllBtn.addEventListener('click', () => {
+                    this.toggleSelectAll();
+                });
+                
+                // Clear selection
+                this.clearSelectionBtn.addEventListener('click', () => {
+                    this.clearSelection();
+                });
+                
+                // Delete selected
+                this.deleteSelectedBtn.addEventListener('click', () => {
+                    this.deleteSelected();
+                });
+                
+                // Checkbox change events
+                document.addEventListener('change', (e) => {
+                    if (e.target.classList.contains('url-checkbox')) {
+                        this.updateSelectionActions();
+                    }
+                });
+            }
+            
+            filterUrls(searchTerm) {
+                const term = searchTerm.toLowerCase();
+                let visibleCount = 0;
+                
+                this.urlItems.forEach(item => {
+                    const url = item.dataset.url.toLowerCase();
+                    const domain = item.dataset.domain.toLowerCase();
+                    const matches = url.includes(term) || domain.includes(term);
+                    
+                    item.style.display = matches ? 'flex' : 'none';
+                    if (matches) visibleCount++;
+                });
+                
+                document.getElementById('visible-count').textContent = visibleCount;
+                
+                // Show empty state if no results
+                const urlList = document.getElementById('url-list');
+                const existingEmptyState = document.querySelector('.search-empty-state');
+                
+                if (visibleCount === 0 && searchTerm) {
+                    if (!existingEmptyState) {
+                        const emptyState = document.createElement('div');
+                        emptyState.className = 'empty-state search-empty-state';
+                        emptyState.innerHTML = `
+                            <h3>No URLs Found</h3>
+                            <p>No URLs match your search for "${searchTerm}"</p>
+                        `;
+                        urlList.parentNode.appendChild(emptyState);
+                    }
+                } else if (existingEmptyState) {
+                    existingEmptyState.remove();
+                }
+            }
+            
+            sortUrls(sortType) {
+                const urlList = document.getElementById('url-list');
+                const items = Array.from(this.urlItems);
+                
+                items.sort((a, b) => {
+                    switch (sortType) {
+                        case 'alphabetical':
+                            return a.dataset.url.localeCompare(b.dataset.url);
+                        case 'domain':
+                            return a.dataset.domain.localeCompare(b.dataset.domain);
+                        case 'oldest':
+                            return 0; // Keep original order for oldest
+                        case 'newest':
+                        default:
+                            return 0; // Keep original order for newest (reverse would be applied)
+                    }
+                });
+                
+                if (sortType === 'newest') {
+                    items.reverse();
+                }
+                
+                // Re-append items in new order
+                items.forEach(item => urlList.appendChild(item));
+            }
+            
+            toggleSelectAll() {
+                const visibleCheckboxes = Array.from(this.urlItems)
+                    .filter(item => item.style.display !== 'none')
+                    .map(item => item.querySelector('.url-checkbox'));
+                
+                const allChecked = visibleCheckboxes.every(cb => cb.checked);
+                
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = !allChecked;
+                });
+                
+                this.selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+                this.updateSelectionActions();
+            }
+            
+            clearSelection() {
+                document.querySelectorAll('.url-checkbox:checked').forEach(cb => {
+                    cb.checked = false;
+                });
+                this.updateSelectionActions();
+            }
+            
+            updateSelectionActions() {
+                const selectedCheckboxes = document.querySelectorAll('.url-checkbox:checked');
+                const count = selectedCheckboxes.length;
+                
+                this.selectedCount.textContent = count;
+                this.selectionActions.classList.toggle('show', count > 0);
+            }
+            
+            deleteSelected() {
+                const selectedCount = document.querySelectorAll('.url-checkbox:checked').length;
+                
+                if (selectedCount === 0) {
+                    alert('Please select URLs to delete');
+                    return;
+                }
+                
+                const confirmed = confirm(`Are you sure you want to delete ${selectedCount} URL${selectedCount > 1 ? 's' : ''}?`);
+                
+                if (confirmed) {
+                    this.deleteForm.submit();
+                }
+            }
+            
+            updateStats() {
+                const domains = new Set();
+                this.urlItems.forEach(item => {
+                    if (item.dataset.domain && item.dataset.domain !== 'invalid') {
+                        domains.add(item.dataset.domain);
+                    }
+                });
+                
+                document.getElementById('domain-count').textContent = domains.size;
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new URLManager();
+        });
+        
+        // Add URL form enhancement
+        document.querySelector('form[action="/add"]').addEventListener('submit', function(e) {
+            const input = this.querySelector('input[name="url"]');
+            let url = input.value.trim();
+            
+            // Auto-prepend https:// if no protocol specified
+            if (url && !url.match(/^https?:\/\//)) {
+                url = 'https://' + url;
+                input.value = url;
+            }
+        });
+    </script>
 </body>
 </html>
-
